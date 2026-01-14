@@ -959,9 +959,9 @@
 
                 const fileName = imgSrc.split('/').pop().split('?')[0].split('#')[0];
                 galleryItemsHTML += `
-                <div class="card gallery-card" id="card-${index}" data-img="${imgSrc}" ${styleStr}>
+                <div class="card gallery-card" id="card-${index}" data-img="${fileName}" ${styleStr}>
                     <div class="card-inner">
-                        <img src="${imgSrc}" alt="Gallery Image">
+                        <img src="${fileName}" alt="Gallery Image">
                         <div class="card-content">
                             <h3>${item.dataset.title}</h3>
                             <div class="desc">${item.dataset.desc}</div>
