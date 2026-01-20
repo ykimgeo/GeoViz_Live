@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immersive Gallery</title>
+<style>
+    :root { --dark: #111; --light: #eee; --accent: #27ae60; }
+    body { background-color: var(--dark); color: var(--light); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px; overflow-x: hidden; perspective: 1000px; }
+    .noise { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; opacity: 0.07; background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIxIi8+PC9zdmc+'); }
+    h1 { text-align: center; font-weight: 300; letter-spacing: 5px; margin-bottom: 60px; text-transform: uppercase; font-size: 3rem; text-shadow: 0 0 20px rgba(255,255,255,0.3); position: relative; z-index: 20; }
+    .gallery-container { display: flex; flex-wrap: wrap; gap: 20px; max-width: 1600px; margin: 0 auto; position: relative; z-index: 20; }
+    .gallery-container::after { content: ''; flex-grow: 999999999; min-width: 200px; height: 0; }
+    .card { height: 40vh; min-height: 400px; max-width: 100%; position: relative; background: transparent; perspective: 1000px; cursor: pointer; border-radius: 8px; overflow: hidden; }
+    .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); transform-style: preserve-3d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .card:hover .card-inner { transform: scale(0.98); box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+    .card img { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.9) contrast(1.1); transition: 0.5s; }
+    .card:hover img { filter: brightness(1); transform: scale(1.02); }
+    .card-content { position: absolute; bottom: 0; left: 0; width: 100%; padding: 25px; box-sizing: border-box; background: linear-gradient(to top, black 20%, transparent 100%); transform: translateZ(30px); opacity: 0; transition: 0.4s; pointer-events: none; }
+    .card:hover .card-content { opacity: 1; transform: translateZ(50px) translateY(-10px); }
+    h3 { margin: 0 0 5px 0; color: #fff; font-size: 1.4rem; letter-spacing: 1px; }
+    .desc { font-size: 0.9rem; color: #ccc; max-height: 80px; overflow: hidden; }
+    #lightbox { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+    #lightbox.active { display: flex; opacity: 1; }
+    .lb-content { width: 90vw; height: 85vh; background: #1a1a1a; border-radius: 12px; display: flex; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); border: 1px solid #333; position: relative; }
+    .lb-image-container { flex: 2; background: #000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .lb-image-container img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+    .lb-text-container { flex: 1; padding: 40px; overflow-y: auto; border-left: 1px solid #333; display: flex; flex-direction: column; }
+    .lb-title { font-size: 2rem; margin-top: 0; color: var(--accent); margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+    .lb-desc { font-size: 1.1rem; line-height: 1.6; color: #ddd; }
+    .lb-desc p { margin-bottom: 1em; }
+    .close-lb { position: absolute; top: 20px; right: 20px; color: white; font-size: 2.5rem; cursor: pointer; user-select: none; z-index: 100; line-height: 1; }
+    .close-lb:hover { color: #e74c3c; transform: scale(1.1); transition: 0.2s; }
+    @media (max-width: 900px) { .lb-content { flex-direction: column; height: 90vh; } .lb-image-container { flex: 1; } .lb-text-container { flex: 1; padding: 20px; } }
+</style>
+</head>
+<body>
+    <div class="noise"></div>
+    <h1>Visuals & Reflections</h1>
+    <div class="gallery-container">
+                <div class="card gallery-card" id="card-0" data-img="test1.jpg" style="flex-grow: 150; flex-basis: 600px;">
+                    <div class="card-inner">
+                        <img src="test1.jpg" alt="Gallery Image">
+                        <div class="card-content">
+                            <h3>Test 1</h3>
+                            <div class="desc"><p>Test 1 image</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card gallery-card" id="card-1" data-img="test2.png" style="flex-grow: 150; flex-basis: 600px;">
+                    <div class="card-inner">
+                        <img src="test2.png" alt="Gallery Image">
+                        <div class="card-content">
+                            <h3>Test 2</h3>
+                            <div class="desc"><p>Test 2 image</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card gallery-card" id="card-2" data-img="test3.png" style="flex-grow: 150; flex-basis: 600px;">
+                    <div class="card-inner">
+                        <img src="test3.png" alt="Gallery Image">
+                        <div class="card-content">
+                            <h3>Test 3</h3>
+                            <div class="desc"><p>Test 3 image</p></div>
+                        </div>
+                    </div>
+                </div></div>
+    <div id="lightbox">
+        <div class="lb-content">
+            <div class="close-lb" id="close-btn">&times;</div>
+            <div class="lb-image-container"><img id="lb-img" src=""></div>
+            <div class="lb-text-container"><h2 id="lb-title" class="lb-title"></h2><div id="lb-desc" class="lb-desc"></div></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.gallery-card');
+            const lightbox = document.getElementById('lightbox');
+            const closeBtn = document.getElementById('close-btn');
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const imgSrc = card.getAttribute('data-img');
+                    const title = card.querySelector('h3').innerText;
+                    const desc = card.querySelector('.desc').innerHTML;
+                    document.getElementById('lb-img').src = imgSrc;
+                    document.getElementById('lb-title').innerText = title;
+                    document.getElementById('lb-desc').innerHTML = desc;
+                    lightbox.classList.add('active');
+                });
+            });
+            closeBtn.addEventListener('click', () => lightbox.classList.remove('active'));
+            lightbox.addEventListener('click', (e) => { if(e.target === lightbox) lightbox.classList.remove('active'); });
+        });
+    </script>
+</body>
+</html>
