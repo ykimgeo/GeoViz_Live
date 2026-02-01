@@ -1106,7 +1106,7 @@
             const template = `<div class="gallery-item" data-type="${type}" onclick="openModal(this)">
                 <button class="delete-btn" onclick="deleteElement(this, event)">🗑️</button>
                 ${imagePart}
-                <div class="item-data" onclick="event.stopPropagation()">
+                <div class="item-data" onclick="if (isEditing) event.stopPropagation()">
                     <h3 class="editable-field item-title" onclick="openEditor(this)">Title</h3>
                     <div class="editable-field desc-text" onclick="openEditor(this)"><p>${type === 'text' ? 'Reflections...' : 'Description...'}</p></div>
                     ${type === 'standard' ? `
