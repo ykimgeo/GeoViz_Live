@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Demo 1 — The Event → State → Update Loop</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0D1B2A; color: #D8E6F0; min-height: 100vh; }
+
+  header {
+    background: #112030; border-bottom: 3px solid #02C39A;
+    padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { font-size: 1.1rem; color: #fff; font-weight: 700; }
+  header .badge { background: #02C39A; color: #0D1B2A; padding: 2px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; }
+
+  .layout { display: grid; grid-template-columns: 300px 1fr 280px; height: calc(100vh - 58px); }
+
+  /* ── LEFT PANEL ── */
+  .controls { background: #112030; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; border-right: 1px solid #1C3144; }
+  .ctrl-section { background: #1A2B38; border-radius: 8px; padding: 14px; border-left: 3px solid #1C7293; }
+  .ctrl-section h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .08em; color: #02C39A; margin-bottom: 10px; }
+  label { display: block; font-size: 0.83rem; color: #A0B8CC; margin-bottom: 4px; }
+  select, input[type=range] { width: 100%; }
+  select { background: #0D1B2A; color: #D8E6F0; border: 1px solid #1C7293; border-radius: 5px; padding: 7px 10px; font-size: 0.85rem; cursor: pointer; }
+  select:focus { outline: 2px solid #02C39A; }
+  input[type=range] { accent-color: #02C39A; height: 5px; cursor: pointer; }
+  .slider-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: #6B8CA0; margin-top: 4px; }
+  .slider-val { color: #F7A325; font-weight: 700; font-size: 0.9rem; }
+
+  .cb-group { display: flex; flex-direction: column; gap: 8px; }
+  .cb-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .cb-item input[type=checkbox] { accent-color: #02C39A; width: 15px; height: 15px; cursor: pointer; }
+  .cb-item span { font-size: 0.85rem; color: #A0B8CC; }
+
+  .btn { width: 100%; padding: 8px; background: #065A82; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: background .2s; }
+  .btn:hover { background: #1C7293; }
+  .btn.reset { background: #3a1a1a; color: #E63946; border: 1px solid #E63946; }
+  .btn.reset:hover { background: #E63946; color: #fff; }
+
+  /* ── MAP ── */
+  #map { width: 100%; height: 100%; }
+
+  /* tooltip */
+  #tooltip { position: absolute; z-index: 1000; background: #112030; border: 1px solid #02C39A; border-radius: 6px; padding: 8px 12px; font-size: 0.82rem; pointer-events: none; display: none; max-width: 180px; }
+  #tooltip strong { color: #02C39A; display: block; margin-bottom: 4px; }
+
+  /* legend */
+  .legend-box { background: #112030; border: 1px solid #1C3144; border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; }
+  .legend-box h4 { color: #02C39A; margin-bottom: 8px; font-size: 0.8rem; }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .swatch { width: 18px; height: 12px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+  /* ── RIGHT PANEL ── */
+  .sidebar { background: #112030; border-left: 1px solid #1C3144; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .sidebar h2 { font-size: 0.95rem; color: #fff; }
+  .info-card { background: #1A2B38; border-radius: 8px; padding: 14px; border-left: 3px solid #F7A325; }
+  .info-card h3 { font-size: 1rem; color: #F7A325; margin-bottom: 8px; }
+  .info-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #1C3144; font-size: 0.82rem; }
+  .info-row:last-child { border-bottom: none; }
+  .info-row span:first-child { color: #6B8CA0; }
+  .info-row span:last-child { color: #D8E6F0; font-weight: 600; }
+  .no-select { text-align: center; color: #4A6274; font-size: 0.85rem; padding: 20px 0; }
+
+  /* state log */
+  .state-log { background: #0A1620; border-radius: 8px; padding: 12px; border: 1px solid #1C3144; flex: 1; overflow-y: auto; }
+  .state-log h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .08em; color: #1C7293; margin-bottom: 8px; }
+  .log-entry { font-family: Consolas, monospace; font-size: 0.73rem; color: #4A6274; margin-bottom: 4px; }
+  .log-entry.new { color: #02C39A; }
+  .count-badge { display: inline-block; background: #065A82; color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="badge">DEMO 1</span>
+  <h1>The Event → State → Update Loop &nbsp;·&nbsp; JavaScript for Geovisualization</h1>
+</header>
+
+<div class="layout">
+  <!-- LEFT CONTROLS -->
+  <div class="controls">
+    <div class="ctrl-section">
+      <h3>📊 Attribute</h3>
+      <label for="attr-select">Map attribute:</label>
+      <select id="attr-select">
+        <option value="crimeRate">Crime Rate (per 1,000)</option>
+        <option value="population">Population</option>
+        <option value="medianIncome">Median Income ($)</option>
+        <option value="greenCoverage">Green Coverage (%)</option>
+      </select>
+    </div>
+
+    <div class="ctrl-section">
+      <h3>🔽 Filter</h3>
+      <label>Min value: <span class="slider-val" id="filter-display">0</span></label>
+      <input type="range" id="filter-slider" min="0" max="100" value="0" step="1">
+      <div class="slider-row"><span>0</span><span>50</span><span>100</span></div>
+    </div>
+
+    <div class="ctrl-section">
+      <h3>🗂 Layers</h3>
+      <div class="cb-group">
+        <label class="cb-item"><input type="checkbox" id="cb-counties" checked><span>Counties layer</span></label>
+        <label class="cb-item"><input type="checkbox" id="cb-points"><span>Hospitals layer</span></label>
+      </div>
+    </div>
+
+    <div class="ctrl-section">
+      <h3>🎨 Color Scheme</h3>
+      <select id="scheme-select">
+        <option value="blues">Blues (sequential)</option>
+        <option value="reds">Reds (sequential)</option>
+        <option value="greens">Greens (sequential)</option>
+        <option value="diverging">Purple–Teal (diverging)</option>
+      </select>
+    </div>
+
+    <button class="btn reset" id="btn-reset">↺ Reset All</button>
+    <button class="btn" id="btn-zoom-all">⊕ Zoom to All</button>
+  </div>
+
+  <!-- MAP -->
+  <div style="position:relative;">
+    <div id="map"></div>
+    <div id="tooltip"><strong id="tt-name"></strong><span id="tt-val"></span></div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar">
+    <h2>Selected Feature</h2>
+    <div id="info-panel" style="display:none;">
+      <div class="info-card">
+        <h3 id="panel-name">—</h3>
+        <div class="info-row"><span>Crime Rate</span><span id="val-crime">—</span></div>
+        <div class="info-row"><span>Population</span><span id="val-pop">—</span></div>
+        <div class="info-row"><span>Median Income</span><span id="val-income">—</span></div>
+        <div class="info-row"><span>Green Coverage</span><span id="val-green">—</span></div>
+        <div class="info-row"><span>Visible</span><span id="val-visible">—</span></div>
+      </div>
+      <button class="btn" id="btn-zoom" style="margin-top:8px;">🔍 Zoom to Feature</button>
+    </div>
+    <div class="no-select" id="no-select-msg">Click a county to see details</div>
+
+    <div style="margin-top: auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:0.75rem; color:#1C7293; text-transform:uppercase; letter-spacing:.08em;">State Log</span>
+        <span class="count-badge" id="feature-count">0 features</span>
+      </div>
+      <div class="state-log" id="state-log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// 1. STATE — the single source of truth
+// ═══════════════════════════════════════════════════════════════
+const state = {
+  attribute:   "crimeRate",
+  filterValue: 0,
+  colorScheme: "blues",
+  selectedId:  null,
+  layerVisibility: { counties: true, hospitals: false }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// 2. DATA — synthetic NC county data
+// ═══════════════════════════════════════════════════════════════
+const COLOR_RAMPS = {
+  blues:     ["#C6DBEF","#9ECAE1","#6BAED6","#3182BD","#08519C"],
+  reds:      ["#FCBBA1","#FC9272","#FB6A4A","#DE2D26","#A50F15"],
+  greens:    ["#C7E9C0","#A1D99B","#74C476","#31A354","#006D2C"],
+  diverging: ["#762A83","#9970AB","#C2A5CF","#A6DBA0","#1B7837"]
+};
+
+// Synthetic county data with realistic polygons around Charlotte
+const COUNTIES = [
+  { id:1, name:"Mecklenburg", center:[35.22,-80.84], crimeRate:6.8, population:1115482, medianIncome:65200, greenCoverage:38 },
+  { id:2, name:"Cabarrus",    center:[35.38,-80.57], crimeRate:3.2, population:226700,  medianIncome:58400, greenCoverage:51 },
+  { id:3, name:"Union",       center:[34.99,-80.54], crimeRate:2.1, population:247600,  medianIncome:71200, greenCoverage:62 },
+  { id:4, name:"Gaston",      center:[35.28,-81.18], crimeRate:5.4, population:235900,  medianIncome:51800, greenCoverage:44 },
+  { id:5, name:"Lincoln",     center:[35.48,-81.21], crimeRate:2.8, population:92700,   medianIncome:55400, greenCoverage:58 },
+  { id:6, name:"Iredell",     center:[35.68,-80.87], crimeRate:3.5, population:197600,  medianIncome:62100, greenCoverage:55 },
+  { id:7, name:"Rowan",       center:[35.62,-80.49], crimeRate:4.9, population:147200,  medianIncome:49200, greenCoverage:47 },
+  { id:8, name:"Stanly",      center:[35.30,-80.24], crimeRate:3.8, population:62300,   medianIncome:47100, greenCoverage:53 },
+  { id:9, name:"Anson",       center:[34.97,-79.99], crimeRate:7.2, population:25400,   medianIncome:39800, greenCoverage:61 },
+  { id:10, name:"Cleveland",  center:[35.36,-81.56], crimeRate:5.1, population:100700,  medianIncome:46200, greenCoverage:49 },
+  { id:11, name:"Catawba",    center:[35.66,-81.23], crimeRate:3.3, population:160200,  medianIncome:53900, greenCoverage:52 },
+  { id:12, name:"Alexander",  center:[35.92,-81.19], crimeRate:2.2, population:38800,   medianIncome:50100, greenCoverage:60 },
+];
+
+// Build rough square-ish GeoJSON polygons around each center
+function makePolygon(cx, cy, size = 0.25) {
+  return { type: "Polygon", coordinates: [[
+    [cy - size, cx - size], [cy + size, cx - size],
+    [cy + size, cx + size], [cy - size, cx + size],
+    [cy - size, cx - size]
+  ]]};
+}
+
+const geojsonData = {
+  type: "FeatureCollection",
+  features: COUNTIES.map(c => ({
+    type: "Feature",
+    geometry: makePolygon(c.center[0], c.center[1], 0.22),
+    properties: c
+  }))
+};
+
+// Hospitals (point layer)
+const HOSPITALS = [
+  { name:"Atrium Health Main", lat:35.225, lng:-80.838 },
+  { name:"Novant Health",      lat:35.202, lng:-80.851 },
+  { name:"Cabarrus Medical",   lat:35.388, lng:-80.561 },
+  { name:"Gaston Memorial",    lat:35.275, lng:-81.188 },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// 3. MAP SETUP
+// ═══════════════════════════════════════════════════════════════
+const map = L.map("map").setView([35.35, -80.84], 9);
+
+const darkTile = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  attribution: "© OpenStreetMap © CARTO", maxZoom: 19, subdomains: "abcd"
+});
+const osmTile = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap contributors", maxZoom: 19
+});
+darkTile.addTo(map);
+darkTile.on("tileerror", () => { map.removeLayer(darkTile); osmTile.addTo(map); });
+
+setTimeout(() => map.invalidateSize(), 100);
+window.addEventListener("resize", () => map.invalidateSize());
+
+// ═══════════════════════════════════════════════════════════════
+// 4. CLASSIFICATION & COLOR FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+const ATTR_RANGES = {
+  crimeRate:    { min:0, max:10, label:"Crime Rate", unit:"per 1k" },
+  population:   { min:0, max:1200000, label:"Population", unit:"" },
+  medianIncome: { min:30000, max:80000, label:"Median Income", unit:"$" },
+  greenCoverage:{ min:30, max:70, label:"Green Coverage", unit:"%" },
+};
+
+function computeBreaks(attr, n=5) {
+  const { min, max } = ATTR_RANGES[attr];
+  const step = (max - min) / n;
+  return Array.from({ length: n }, (_, i) => min + step * (i + 1));
+}
+
+function getColor(val, attr) {
+  const breaks = computeBreaks(attr);
+  const ramp   = COLOR_RAMPS[state.colorScheme];
+  const idx    = breaks.findIndex(b => val <= b);
+  return ramp[idx === -1 ? ramp.length - 1 : idx];
+}
+
+function countyStyle(feature) {
+  const p = feature.properties;
+  const val = p[state.attribute];
+  const visible = val >= (state.attribute === "crimeRate" ? 0 : 0) &&
+                  normalise(val, state.attribute) * 100 >= state.filterValue;
+  return {
+    fillColor:   getColor(val, state.attribute),
+    fillOpacity: visible ? 0.78 : 0.0,
+    color: "#FFFFFF", weight: 1
+  };
+}
+
+function normalise(val, attr) {
+  const { min, max } = ATTR_RANGES[attr];
+  return (val - min) / (max - min);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 5. LAYERS
+// ═══════════════════════════════════════════════════════════════
+let countyLayer, selectedLayer = null;
+
+function buildCountyLayer() {
+  if (countyLayer) map.removeLayer(countyLayer);
+  countyLayer = L.geoJSON(geojsonData, {
+    style: countyStyle,
+    onEachFeature: onEachFeature
+  });
+  if (state.layerVisibility.counties) countyLayer.addTo(map);
+}
+
+// Hospital markers
+const hospitalGroup = L.layerGroup();
+HOSPITALS.forEach(h => {
+  L.circleMarker([h.lat, h.lng], {
+    radius: 7, color: "#E63946", fillColor: "#E63946",
+    fillOpacity: 0.9, weight: 2
+  }).bindTooltip(h.name, { sticky: true }).addTo(hospitalGroup);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 6. INTERACTIONS — onEachFeature wires hover + click per feature
+// ═══════════════════════════════════════════════════════════════
+function onEachFeature(feature, layer) {
+  layer.on("mouseover", function(e) {
+    this.setStyle({ weight: 3, color: "#F7A325", fillOpacity: 0.92 });
+    this.bringToFront();
+    const p = feature.properties;
+    const val = p[state.attribute];
+    const meta = ATTR_RANGES[state.attribute];
+    document.getElementById("tt-name").textContent = p.name + " County";
+    document.getElementById("tt-val").textContent  = meta.label + ": " + formatVal(val, state.attribute);
+    const tip = document.getElementById("tooltip");
+    tip.style.display = "block";
+  });
+
+  layer.on("mousemove", function(e) {
+    const tip = document.getElementById("tooltip");
+    const pt = e.containerPoint;
+    tip.style.left = (pt.x + 14) + "px";
+    tip.style.top  = (pt.y - 40) + "px";
+  });
+
+  layer.on("mouseout", function() {
+    countyLayer.resetStyle(this);
+    if (state.selectedId === feature.properties.id) {
+      this.setStyle({ weight: 3, color: "#02C39A", fillOpacity: 0.5 });
+    }
+    document.getElementById("tooltip").style.display = "none";
+  });
+
+  layer.on("click", function(e) {
+    L.DomEvent.stopPropagation(e);
+    selectFeature(feature.properties.id, this);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 7. SELECTION
+// ═══════════════════════════════════════════════════════════════
+function selectFeature(id, layer) {
+  // Deselect previous
+  if (selectedLayer) countyLayer.resetStyle(selectedLayer);
+
+  state.selectedId = id;
+  selectedLayer = layer;
+
+  layer.setStyle({ weight: 3, color: "#02C39A", fillOpacity: 0.5 });
+  layer.bringToFront();
+
+  const p = layer.feature.properties;
+  document.getElementById("panel-name").textContent = p.name + " County";
+  document.getElementById("val-crime").textContent  = p.crimeRate.toFixed(1) + " per 1,000";
+  document.getElementById("val-pop").textContent    = p.population.toLocaleString();
+  document.getElementById("val-income").textContent = "$" + p.medianIncome.toLocaleString();
+  document.getElementById("val-green").textContent  = p.greenCoverage + "%";
+  const norm = normalise(p[state.attribute], state.attribute);
+  document.getElementById("val-visible").textContent = norm * 100 >= state.filterValue ? "✅ Shown" : "🚫 Filtered";
+
+  document.getElementById("info-panel").style.display = "block";
+  document.getElementById("no-select-msg").style.display = "none";
+
+  logState("CLICK → selectFeature(" + p.name + ")");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 8. LEGEND
+// ═══════════════════════════════════════════════════════════════
+const legendCtrl = L.control({ position: "bottomright" });
+legendCtrl.onAdd = function() {
+  const div = L.DomUtil.create("div", "legend-box");
+  div.id = "legend";
+  return div;
+};
+legendCtrl.addTo(map);
+
+function updateLegend() {
+  const attr   = state.attribute;
+  const breaks = computeBreaks(attr);
+  const ramp   = COLOR_RAMPS[state.colorScheme];
+  const meta   = ATTR_RANGES[attr];
+  let html = `<h4>${meta.label}</h4>`;
+  breaks.forEach((b, i) => {
+    const lo = i === 0 ? meta.min : breaks[i - 1];
+    const fmt = v => attr === "population" || attr === "medianIncome"
+      ? v.toLocaleString() : v.toFixed(1);
+    html += `<div class="legend-row">
+      <span class="swatch" style="background:${ramp[i]}"></span>
+      <span>${fmt(lo)} – ${fmt(b)} ${meta.unit}</span>
+    </div>`;
+  });
+  document.getElementById("legend").innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 9. FILTER — update opacity per feature
+// ═══════════════════════════════════════════════════════════════
+function applyFilter() {
+  let shown = 0;
+  countyLayer.eachLayer(l => {
+    const val  = l.feature.properties[state.attribute];
+    const norm = normalise(val, state.attribute) * 100;
+    const isSelected = l.feature.properties.id === state.selectedId;
+    if (norm >= state.filterValue) {
+      l.setStyle({ fillOpacity: isSelected ? 0.5 : 0.78 });
+      shown++;
+    } else {
+      l.setStyle({ fillOpacity: 0.0 });
+    }
+  });
+  document.getElementById("feature-count").textContent = shown + " / " + COUNTIES.length + " shown";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 10. RENDER — reads state, redraws everything
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  countyLayer.setStyle(countyStyle);
+  if (selectedLayer) selectedLayer.setStyle({ weight: 3, color: "#02C39A", fillOpacity: 0.5 });
+  applyFilter();
+  updateLegend();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 11. EVENT WIRING
+// ═══════════════════════════════════════════════════════════════
+document.getElementById("attr-select").addEventListener("change", e => {
+  state.attribute = e.target.value;
+  logState("CHANGE → attribute = " + state.attribute);
+  render();
+});
+
+document.getElementById("filter-slider").addEventListener("input", e => {
+  state.filterValue = +e.target.value;
+  document.getElementById("filter-display").textContent = state.filterValue;
+  logState("INPUT → filterValue = " + state.filterValue);
+  applyFilter();
+});
+
+document.getElementById("scheme-select").addEventListener("change", e => {
+  state.colorScheme = e.target.value;
+  logState("CHANGE → colorScheme = " + state.colorScheme);
+  render();
+});
+
+document.getElementById("cb-counties").addEventListener("change", e => {
+  state.layerVisibility.counties = e.target.checked;
+  e.target.checked ? countyLayer.addTo(map) : map.removeLayer(countyLayer);
+  logState("CHANGE → counties visible = " + e.target.checked);
+});
+
+document.getElementById("cb-points").addEventListener("change", e => {
+  state.layerVisibility.hospitals = e.target.checked;
+  e.target.checked ? hospitalGroup.addTo(map) : map.removeLayer(hospitalGroup);
+  logState("CHANGE → hospitals visible = " + e.target.checked);
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => {
+  state.attribute   = "crimeRate";
+  state.filterValue = 0;
+  state.colorScheme = "blues";
+  state.selectedId  = null;
+  selectedLayer     = null;
+
+  document.getElementById("attr-select").value   = "crimeRate";
+  document.getElementById("filter-slider").value = "0";
+  document.getElementById("filter-display").textContent = "0";
+  document.getElementById("scheme-select").value = "blues";
+  document.getElementById("info-panel").style.display   = "none";
+  document.getElementById("no-select-msg").style.display = "";
+
+  render();
+  map.setView([35.35, -80.84], 9);
+  logState("RESET → all defaults restored");
+});
+
+document.getElementById("btn-zoom-all").addEventListener("click", () => {
+  map.fitBounds(countyLayer.getBounds(), { padding: [20, 20] });
+  logState("CLICK → zoom to all features");
+});
+
+document.getElementById("btn-zoom").addEventListener("click", () => {
+  if (selectedLayer) {
+    map.fitBounds(selectedLayer.getBounds(), { padding: [40, 40], maxZoom: 11 });
+    logState("CLICK → zoom to " + selectedLayer.feature.properties.name);
+  }
+});
+
+map.on("click", () => {
+  if (state.selectedId !== null) {
+    if (selectedLayer) countyLayer.resetStyle(selectedLayer);
+    state.selectedId = null; selectedLayer = null;
+    document.getElementById("info-panel").style.display = "none";
+    document.getElementById("no-select-msg").style.display = "";
+    logState("CLICK map → deselect");
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// 12. HELPERS
+// ═══════════════════════════════════════════════════════════════
+function formatVal(val, attr) {
+  if (attr === "population" || attr === "medianIncome") return val.toLocaleString();
+  return val.toFixed(1);
+}
+
+function logState(action) {
+  const log  = document.getElementById("state-log");
+  const time = new Date().toLocaleTimeString("en", { hour12: false });
+  const prev = log.querySelector(".new");
+  if (prev) prev.classList.remove("new");
+  const div = document.createElement("div");
+  div.className = "log-entry new";
+  div.textContent = `[${time}] ${action}`;
+  log.insertBefore(div, log.firstChild);
+  console.log("STATE:", action, JSON.parse(JSON.stringify(state)));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+buildCountyLayer();
+render();
+logState("INIT → map loaded");
+</script>
+</body>
+</html>

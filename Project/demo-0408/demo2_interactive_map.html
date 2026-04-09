@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Demo 2 — Full Interactive Map Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0D1B2A; color: #D8E6F0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── TOP BAR ── */
+.topbar {
+  background: #0A1620; border-bottom: 3px solid #1C7293;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; flex-shrink: 0; flex-wrap: wrap; row-gap: 8px;
+}
+.topbar .logo { font-weight: 800; font-size: 1rem; color: #02C39A; letter-spacing: -.01em; }
+.topbar .logo span { color: #fff; }
+.topbar-sep { width: 1px; height: 28px; background: #1C3144; }
+.ctrl-group { display: flex; align-items: center; gap: 8px; }
+.ctrl-group label { font-size: 0.78rem; color: #6B8CA0; white-space: nowrap; }
+select, input[type=range] { cursor: pointer; }
+select { background: #1A2B38; color: #D8E6F0; border: 1px solid #1C7293; border-radius: 5px; padding: 5px 10px; font-size: 0.82rem; }
+select:focus { outline: 2px solid #02C39A; }
+input[type=range] { accent-color: #02C39A; width: 110px; }
+.slider-num { font-size: 0.8rem; color: #F7A325; font-weight: 700; min-width: 28px; }
+
+.cb-pill { display: flex; align-items: center; gap: 6px; background: #1A2B38; border: 1px solid #1C3144; border-radius: 5px; padding: 5px 10px; font-size: 0.82rem; cursor: pointer; }
+.cb-pill input { accent-color: #02C39A; cursor: pointer; }
+
+.btn { padding: 6px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+.btn-primary { background: #065A82; color: #fff; }
+.btn-primary:hover { background: #1C7293; }
+.btn-reset { background: #1A2B38; color: #E63946; border: 1px solid #E63946; }
+.btn-reset:hover { background: #E63946; color: #fff; }
+
+.feature-badge { background: #1A2B38; border: 1px solid #1C3144; border-radius: 5px; padding: 5px 12px; font-size: 0.78rem; color: #6B8CA0; }
+.feature-badge strong { color: #02C39A; }
+
+/* ── MAIN BODY ── */
+.body { display: flex; flex: 1; overflow: hidden; }
+
+/* MAP */
+#map { flex: 1; height: 100%; min-height: 0; }
+
+/* tooltip */
+#tooltip { position: absolute; z-index: 2000; background: #0A1620; border: 1.5px solid #02C39A; border-radius: 6px; padding: 8px 13px; font-size: 0.8rem; pointer-events: none; display: none; max-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+#tooltip .tt-name { color: #02C39A; font-weight: 700; margin-bottom: 5px; }
+#tooltip .tt-attr { color: #D8E6F0; }
+#tooltip .tt-sub  { color: #6B8CA0; font-size: 0.72rem; margin-top: 2px; }
+
+/* SIDEBAR */
+.sidebar { width: 290px; background: #112030; border-left: 1px solid #1C3144; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; height: 100%; min-height: 0; }
+.sb-section { padding: 14px 16px; border-bottom: 1px solid #1C3144; }
+.sb-section h3 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .09em; color: #1C7293; margin-bottom: 10px; }
+
+/* Info card */
+.info-card { background: #1A2B38; border-radius: 8px; padding: 12px; border-left: 3px solid #F7A325; }
+.info-card .ic-name { color: #F7A325; font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+.ic-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 4px 0; border-bottom: 1px solid #1C3144; }
+.ic-row:last-child { border-bottom: none; }
+.ic-row .k { color: #6B8CA0; }
+.ic-row .v { color: #D8E6F0; font-weight: 600; }
+.no-sel { text-align: center; color: #4A6274; font-size: 0.83rem; padding: 16px 0; }
+
+.btn-sm { width: 100%; padding: 7px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; margin-top: 8px; }
+.btn-zoom-f { background: #065A82; color: #fff; }
+.btn-zoom-f:hover { background: #1C7293; }
+
+/* Legend */
+.legend-wrap { display: flex; flex-direction: column; gap: 6px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 0.79rem; }
+.swatch { width: 20px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.legend-title { font-weight: 700; color: #D8E6F0; font-size: 0.82rem; margin-bottom: 2px; }
+.legend-hidden { opacity: 0.3; }
+
+/* Layer status */
+.layer-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 4px 0; }
+.layer-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.layer-on  { background: #02C39A; }
+.layer-off { background: #4A6274; }
+
+/* Stats bar */
+.stat-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat-box { flex: 1; min-width: 70px; background: #1A2B38; border-radius: 6px; padding: 8px; text-align: center; }
+.stat-val { font-size: 1.15rem; font-weight: 800; color: #02C39A; }
+.stat-lbl { font-size: 0.68rem; color: #6B8CA0; text-transform: uppercase; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+
+<!-- TOP CONTROL BAR -->
+<div class="topbar">
+  <div class="logo">Geo<span>HDR</span> Dashboard</div>
+  <div class="topbar-sep"></div>
+
+  <div class="ctrl-group">
+    <label>Attribute:</label>
+    <select id="attr-select">
+      <option value="crimeRate">Crime Rate</option>
+      <option value="population">Population</option>
+      <option value="medianIncome">Median Income</option>
+      <option value="greenCoverage">Green Coverage %</option>
+    </select>
+  </div>
+
+  <div class="ctrl-group">
+    <label>Color:</label>
+    <select id="scheme-select">
+      <option value="blues">Blues</option>
+      <option value="reds">Reds</option>
+      <option value="purples">Purples</option>
+      <option value="diverging">Diverging</option>
+    </select>
+  </div>
+
+  <div class="ctrl-group">
+    <label>Filter ≥ <span class="slider-num" id="filter-num">0%</span></label>
+    <input type="range" id="filter-slider" min="0" max="100" value="0" step="1">
+  </div>
+
+  <div class="topbar-sep"></div>
+
+  <label class="cb-pill"><input type="checkbox" id="cb-counties" checked> Counties</label>
+  <label class="cb-pill"><input type="checkbox" id="cb-hospitals"> Hospitals</label>
+  <label class="cb-pill"><input type="checkbox" id="cb-transit"> Transit Hubs</label>
+
+  <div class="topbar-sep"></div>
+
+  <button class="btn btn-primary" id="btn-zoom-all">⊕ Fit All</button>
+  <button class="btn btn-reset" id="btn-reset">↺ Reset</button>
+
+  <div class="feature-badge" id="feat-count"><strong>12</strong> / 12 features</div>
+</div>
+
+<!-- BODY -->
+<div class="body">
+  <div style="position:relative; flex:1; min-width:0; height:100%;">
+    <div id="map" style="width:100%; height:100%;"></div>
+    <div id="tooltip">
+      <div class="tt-name" id="tt-name"></div>
+      <div class="tt-attr" id="tt-attr"></div>
+      <div class="tt-sub"  id="tt-sub"></div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- STATS -->
+    <div class="sb-section">
+      <h3>Region Summary</h3>
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-val" id="stat-count">12</div><div class="stat-lbl">Counties</div></div>
+        <div class="stat-box"><div class="stat-val" id="stat-mean">—</div><div class="stat-lbl">Avg Value</div></div>
+        <div class="stat-box"><div class="stat-val" id="stat-max">—</div><div class="stat-lbl">Max</div></div>
+      </div>
+    </div>
+
+    <!-- SELECTED FEATURE -->
+    <div class="sb-section">
+      <h3>Selected Feature</h3>
+      <div id="no-sel" class="no-sel">Click a county on the map</div>
+      <div id="info-panel" style="display:none">
+        <div class="info-card">
+          <div class="ic-name" id="ic-name">—</div>
+          <div class="ic-row"><span class="k">Crime Rate</span><span class="v" id="ic-crime">—</span></div>
+          <div class="ic-row"><span class="k">Population</span><span class="v" id="ic-pop">—</span></div>
+          <div class="ic-row"><span class="k">Median Income</span><span class="v" id="ic-income">—</span></div>
+          <div class="ic-row"><span class="k">Green Coverage</span><span class="v" id="ic-green">—</span></div>
+        </div>
+        <button class="btn-sm btn-zoom-f" id="btn-zoom-feat">🔍 Zoom to Feature</button>
+      </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="sb-section">
+      <h3>Legend</h3>
+      <div class="legend-title" id="legend-title">Crime Rate</div>
+      <div class="legend-wrap" id="legend-wrap"></div>
+    </div>
+
+    <!-- LAYER STATUS -->
+    <div class="sb-section">
+      <h3>Layer Status</h3>
+      <div class="layer-row">
+        <span><span class="layer-dot" id="dot-counties" style="background:#1C7293"></span>Counties</span>
+        <span id="status-counties" style="font-size:.75rem; color:#6B8CA0">Visible</span>
+      </div>
+      <div class="layer-row">
+        <span><span class="layer-dot layer-off" id="dot-hospitals"></span>Hospitals</span>
+        <span id="status-hospitals" style="font-size:.75rem; color:#6B8CA0">Hidden</span>
+      </div>
+      <div class="layer-row">
+        <span><span class="layer-dot layer-off" id="dot-transit"></span>Transit Hubs</span>
+        <span id="status-transit" style="font-size:.75rem; color:#6B8CA0">Hidden</span>
+      </div>
+    </div>
+
+    <!-- INTERACTION LOG -->
+    <div class="sb-section" style="flex:1">
+      <h3>Interaction Log</h3>
+      <div id="log" style="font-family:Consolas,monospace; font-size:0.72rem; color:#4A6274; max-height:200px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────
+const state = {
+  attribute:   "crimeRate",
+  colorScheme: "blues",
+  filterValue: 0,
+  selectedId:  null,
+  layerVisibility: { counties: true, hospitals: false, transit: false }
+};
+
+// ─────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────
+const COLOR_RAMPS = {
+  blues:    ["#C6DBEF","#9ECAE1","#6BAED6","#3182BD","#08519C"],
+  reds:     ["#FCBBA1","#FC9272","#FB6A4A","#DE2D26","#A50F15"],
+  purples:  ["#DADAEB","#BCBDDC","#9E9AC8","#756BB1","#54278F"],
+  diverging:["#762A83","#9970AB","#C2A5CF","#A6DBA0","#1B7837"]
+};
+
+const ATTR_META = {
+  crimeRate:    { label:"Crime Rate", unit:"per 1k", fmt: v => v.toFixed(1) },
+  population:   { label:"Population", unit:"", fmt: v => (v/1000).toFixed(0)+"k" },
+  medianIncome: { label:"Median Income", unit:"$", fmt: v => "$"+v.toLocaleString() },
+  greenCoverage:{ label:"Green Coverage", unit:"%", fmt: v => v+"%" },
+};
+
+const COUNTIES = [
+  { id:1,  name:"Mecklenburg", center:[35.22,-80.84], crimeRate:6.8, population:1115482, medianIncome:65200, greenCoverage:38 },
+  { id:2,  name:"Cabarrus",    center:[35.38,-80.57], crimeRate:3.2, population:226700,  medianIncome:58400, greenCoverage:51 },
+  { id:3,  name:"Union",       center:[34.99,-80.54], crimeRate:2.1, population:247600,  medianIncome:71200, greenCoverage:62 },
+  { id:4,  name:"Gaston",      center:[35.28,-81.18], crimeRate:5.4, population:235900,  medianIncome:51800, greenCoverage:44 },
+  { id:5,  name:"Lincoln",     center:[35.48,-81.21], crimeRate:2.8, population:92700,   medianIncome:55400, greenCoverage:58 },
+  { id:6,  name:"Iredell",     center:[35.68,-80.87], crimeRate:3.5, population:197600,  medianIncome:62100, greenCoverage:55 },
+  { id:7,  name:"Rowan",       center:[35.62,-80.49], crimeRate:4.9, population:147200,  medianIncome:49200, greenCoverage:47 },
+  { id:8,  name:"Stanly",      center:[35.30,-80.24], crimeRate:3.8, population:62300,   medianIncome:47100, greenCoverage:53 },
+  { id:9,  name:"Anson",       center:[34.97,-79.99], crimeRate:7.2, population:25400,   medianIncome:39800, greenCoverage:61 },
+  { id:10, name:"Cleveland",   center:[35.36,-81.56], crimeRate:5.1, population:100700,  medianIncome:46200, greenCoverage:49 },
+  { id:11, name:"Catawba",     center:[35.66,-81.23], crimeRate:3.3, population:160200,  medianIncome:53900, greenCoverage:52 },
+  { id:12, name:"Alexander",   center:[35.92,-81.19], crimeRate:2.2, population:38800,   medianIncome:50100, greenCoverage:60 },
+];
+
+const HOSPITALS = [
+  { name:"Atrium Health Main", lat:35.225, lng:-80.838, beds:978  },
+  { name:"Novant Health Presbyterian", lat:35.202, lng:-80.851, beds:652 },
+  { name:"Cabarrus Regional", lat:35.388, lng:-80.561, beds:457 },
+  { name:"Gaston Memorial", lat:35.275, lng:-81.188, beds:435 },
+];
+const TRANSIT = [
+  { name:"Charlotte Douglas Airport", lat:35.214, lng:-80.943 },
+  { name:"Gateway Station", lat:35.228, lng:-80.839 },
+  { name:"University City Blvd", lat:35.308, lng:-80.748 },
+  { name:"Northlake Mall Hub", lat:35.349, lng:-80.851 },
+];
+
+// Build GeoJSON polygon for each county
+function makePolygon(cx, cy, size=0.22) {
+  return { type:"Polygon", coordinates:[[
+    [cy-size,cx-size],[cy+size,cx-size],
+    [cy+size,cx+size],[cy-size,cx+size],[cy-size,cx-size]
+  ]]};
+}
+const geojsonData = {
+  type:"FeatureCollection",
+  features: COUNTIES.map(c => ({
+    type:"Feature",
+    geometry: makePolygon(c.center[0], c.center[1]),
+    properties: c
+  }))
+};
+
+// ─────────────────────────────────────────────────────
+// MAP INIT
+// ─────────────────────────────────────────────────────
+const map = L.map("map", { preferCanvas: false }).setView([35.35,-80.84],9);
+
+// Primary: OpenStreetMap (most reliable, no token needed)
+const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap contributors",
+  maxZoom: 19
+});
+
+// Dark overlay via Stadia (fallback)
+const darkLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  attribution: "© OpenStreetMap © CARTO",
+  maxZoom: 19, subdomains: "abcd"
+});
+
+darkLayer.addTo(map);
+darkLayer.on("tileerror", () => {
+  map.removeLayer(darkLayer);
+  osmLayer.addTo(map);
+});
+
+// Force Leaflet to recalculate size after layout settles
+setTimeout(() => map.invalidateSize(), 100);
+window.addEventListener("resize", () => map.invalidateSize());
+
+// ─────────────────────────────────────────────────────
+// CLASSIFICATION
+// ─────────────────────────────────────────────────────
+function computeBreaks(attr, n=5) {
+  const vals = COUNTIES.map(c => c[attr]).sort((a,b)=>a-b);
+  const min = vals[0], max = vals[vals.length-1];
+  const step = (max-min)/n;
+  return Array.from({length:n}, (_,i) => min + step*(i+1));
+}
+function getColor(val, attr) {
+  const breaks = computeBreaks(attr);
+  const ramp   = COLOR_RAMPS[state.colorScheme];
+  const idx    = breaks.findIndex(b => val <= b);
+  return ramp[idx===-1 ? ramp.length-1 : idx];
+}
+function getNorm(val, attr) {
+  const vals = COUNTIES.map(c=>c[attr]);
+  const min=Math.min(...vals), max=Math.max(...vals);
+  return (val-min)/(max-min);
+}
+
+// ─────────────────────────────────────────────────────
+// STYLE FUNCTION
+// ─────────────────────────────────────────────────────
+function countyStyle(feature) {
+  const p   = feature.properties;
+  const val = p[state.attribute];
+  const norm = getNorm(val, state.attribute);
+  return {
+    fillColor:   getColor(val, state.attribute),
+    fillOpacity: norm*100 >= state.filterValue ? 0.8 : 0.0,
+    color: "#FFFFFF", weight: 1
+  };
+}
+
+// ─────────────────────────────────────────────────────
+// LAYERS
+// ─────────────────────────────────────────────────────
+const layerGroups = {};
+let selectedLayer = null;
+
+// County layer
+layerGroups.counties = L.geoJSON(geojsonData, {
+  style: countyStyle,
+  onEachFeature: onEachFeature
+}).addTo(map);
+
+// Hospital markers
+layerGroups.hospitals = L.layerGroup(
+  HOSPITALS.map(h =>
+    L.circleMarker([h.lat,h.lng],{
+      radius:8, color:"#E63946", fillColor:"#E63946",
+      fillOpacity:0.85, weight:2
+    }).bindTooltip(`<strong>${h.name}</strong><br>${h.beds} beds`,{sticky:true})
+  )
+);
+
+// Transit markers
+layerGroups.transit = L.layerGroup(
+  TRANSIT.map(t =>
+    L.circleMarker([t.lat,t.lng],{
+      radius:7, color:"#F7A325", fillColor:"#F7A325",
+      fillOpacity:0.85, weight:2
+    }).bindTooltip(t.name,{sticky:true})
+  )
+);
+
+// ─────────────────────────────────────────────────────
+// INTERACTIONS
+// ─────────────────────────────────────────────────────
+function onEachFeature(feature, layer) {
+  layer.on("mouseover", function(e) {
+    if (feature.properties.id !== state.selectedId) {
+      this.setStyle({ weight:3, color:"#F7A325", fillOpacity:0.9 });
+      this.bringToFront();
+    }
+    const p   = feature.properties;
+    const meta= ATTR_META[state.attribute];
+    document.getElementById("tt-name").textContent = p.name + " County";
+    document.getElementById("tt-attr").textContent = meta.label + ": " + meta.fmt(p[state.attribute]);
+    document.getElementById("tt-sub").textContent  = "Population: " + p.population.toLocaleString();
+    document.getElementById("tooltip").style.display = "block";
+  });
+
+  layer.on("mousemove", function(e) {
+    const pt = e.containerPoint;
+    const tip = document.getElementById("tooltip");
+    tip.style.left = (pt.x+16)+"px";
+    tip.style.top  = (pt.y-50)+"px";
+  });
+
+  layer.on("mouseout", function() {
+    if (feature.properties.id !== state.selectedId) {
+      layerGroups.counties.resetStyle(this);
+    }
+    document.getElementById("tooltip").style.display = "none";
+  });
+
+  layer.on("click", function(e) {
+    L.DomEvent.stopPropagation(e);
+    selectFeature(feature, this);
+  });
+}
+
+function selectFeature(feature, layer) {
+  if (selectedLayer) layerGroups.counties.resetStyle(selectedLayer);
+
+  state.selectedId = feature.properties.id;
+  selectedLayer    = layer;
+
+  layer.setStyle({ weight:3, color:"#02C39A", fillColor:"#02C39A", fillOpacity:0.45 });
+  layer.bringToFront();
+
+  const p = feature.properties;
+  document.getElementById("ic-name").textContent   = p.name + " County";
+  document.getElementById("ic-crime").textContent  = p.crimeRate.toFixed(1) + " per 1k";
+  document.getElementById("ic-pop").textContent    = p.population.toLocaleString();
+  document.getElementById("ic-income").textContent = "$" + p.medianIncome.toLocaleString();
+  document.getElementById("ic-green").textContent  = p.greenCoverage + "%";
+  document.getElementById("info-panel").style.display = "block";
+  document.getElementById("no-sel").style.display     = "none";
+
+  log("CLICK → selected " + p.name);
+}
+
+// ─────────────────────────────────────────────────────
+// RENDER / UPDATE FUNCTIONS
+// ─────────────────────────────────────────────────────
+function render() {
+  layerGroups.counties.setStyle(countyStyle);
+  if (selectedLayer) selectedLayer.setStyle({ weight:3, color:"#02C39A", fillColor:"#02C39A", fillOpacity:0.45 });
+  updateLegend();
+  updateStats();
+  updateFeatureCount();
+}
+
+function updateLegend() {
+  const attr   = state.attribute;
+  const breaks = computeBreaks(attr);
+  const ramp   = COLOR_RAMPS[state.colorScheme];
+  const meta   = ATTR_META[attr];
+  document.getElementById("legend-title").textContent = meta.label;
+  const wrap = document.getElementById("legend-wrap");
+  wrap.innerHTML = "";
+  breaks.forEach((b,i) => {
+    const lo = i===0 ? Math.min(...COUNTIES.map(c=>c[attr])) : breaks[i-1];
+    const row = document.createElement("div");
+    row.className = "legend-row" + (!state.layerVisibility.counties ? " legend-hidden" : "");
+    row.innerHTML = `<span class="swatch" style="background:${ramp[i]}"></span><span>${meta.fmt(lo)} – ${meta.fmt(b)}</span>`;
+    wrap.appendChild(row);
+  });
+}
+
+function updateStats() {
+  const attr  = state.attribute;
+  const shown = COUNTIES.filter(c => getNorm(c[attr],attr)*100 >= state.filterValue);
+  const meta  = ATTR_META[attr];
+  if (shown.length === 0) {
+    document.getElementById("stat-count").textContent = "0";
+    document.getElementById("stat-mean").textContent  = "—";
+    document.getElementById("stat-max").textContent   = "—";
+    return;
+  }
+  const vals = shown.map(c=>c[attr]);
+  const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+  const max  = Math.max(...vals);
+  document.getElementById("stat-count").textContent = shown.length;
+  document.getElementById("stat-mean").textContent  = meta.fmt(mean);
+  document.getElementById("stat-max").textContent   = meta.fmt(max);
+}
+
+function updateFeatureCount() {
+  const attr  = state.attribute;
+  const shown = COUNTIES.filter(c => getNorm(c[attr],attr)*100 >= state.filterValue);
+  document.getElementById("feat-count").innerHTML =
+    `<strong>${shown.length}</strong> / ${COUNTIES.length} features`;
+}
+
+function updateLayerStatus(id, on) {
+  const dot  = document.getElementById("dot-"+id);
+  const stat = document.getElementById("status-"+id);
+  dot.style.background = on ? "#02C39A" : "#4A6274";
+  stat.textContent = on ? "Visible" : "Hidden";
+}
+
+// ─────────────────────────────────────────────────────
+// EVENTS
+// ─────────────────────────────────────────────────────
+document.getElementById("attr-select").addEventListener("change", e => {
+  state.attribute = e.target.value;
+  log("CHANGE → attribute = " + state.attribute);
+  render();
+});
+
+document.getElementById("scheme-select").addEventListener("change", e => {
+  state.colorScheme = e.target.value;
+  log("CHANGE → colorScheme = " + state.colorScheme);
+  render();
+});
+
+document.getElementById("filter-slider").addEventListener("input", e => {
+  state.filterValue = +e.target.value;
+  document.getElementById("filter-num").textContent = state.filterValue + "%";
+  log("INPUT  → filterValue = " + state.filterValue + "%");
+  render();
+});
+
+document.getElementById("cb-counties").addEventListener("change", e => {
+  state.layerVisibility.counties = e.target.checked;
+  e.target.checked ? layerGroups.counties.addTo(map) : map.removeLayer(layerGroups.counties);
+  updateLayerStatus("counties", e.target.checked);
+  updateLegend();
+  log("TOGGLE → counties " + (e.target.checked ? "ON" : "OFF"));
+});
+
+document.getElementById("cb-hospitals").addEventListener("change", e => {
+  state.layerVisibility.hospitals = e.target.checked;
+  e.target.checked ? layerGroups.hospitals.addTo(map) : map.removeLayer(layerGroups.hospitals);
+  updateLayerStatus("hospitals", e.target.checked);
+  log("TOGGLE → hospitals " + (e.target.checked ? "ON" : "OFF"));
+});
+
+document.getElementById("cb-transit").addEventListener("change", e => {
+  state.layerVisibility.transit = e.target.checked;
+  e.target.checked ? layerGroups.transit.addTo(map) : map.removeLayer(layerGroups.transit);
+  updateLayerStatus("transit", e.target.checked);
+  log("TOGGLE → transit " + (e.target.checked ? "ON" : "OFF"));
+});
+
+document.getElementById("btn-zoom-all").addEventListener("click", () => {
+  map.fitBounds(layerGroups.counties.getBounds(), { padding:[30,30] });
+  log("CLICK  → fit to all counties");
+});
+
+document.getElementById("btn-zoom-feat").addEventListener("click", () => {
+  if (selectedLayer) {
+    map.fitBounds(selectedLayer.getBounds(), { padding:[60,60], maxZoom:12, animate:true });
+    log("CLICK  → zoom to " + selectedLayer.feature.properties.name);
+  }
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => {
+  state.attribute   = "crimeRate";
+  state.colorScheme = "blues";
+  state.filterValue = 0;
+  state.selectedId  = null;
+  if (selectedLayer) { layerGroups.counties.resetStyle(selectedLayer); selectedLayer = null; }
+
+  document.getElementById("attr-select").value     = "crimeRate";
+  document.getElementById("scheme-select").value   = "blues";
+  document.getElementById("filter-slider").value   = "0";
+  document.getElementById("filter-num").textContent= "0%";
+  document.getElementById("info-panel").style.display = "none";
+  document.getElementById("no-sel").style.display     = "";
+
+  ["counties","hospitals","transit"].forEach(id => {
+    const on = id === "counties";
+    state.layerVisibility[id] = on;
+    document.getElementById("cb-"+id).checked = on;
+    on ? layerGroups[id].addTo(map) : map.removeLayer(layerGroups[id]);
+    updateLayerStatus(id, on);
+  });
+
+  render();
+  map.setView([35.35,-80.84],9);
+  log("RESET  → all state restored to defaults");
+});
+
+map.on("click", () => {
+  if (state.selectedId !== null) {
+    if (selectedLayer) layerGroups.counties.resetStyle(selectedLayer);
+    state.selectedId = null; selectedLayer = null;
+    document.getElementById("info-panel").style.display = "none";
+    document.getElementById("no-sel").style.display = "";
+    log("CLICK  → deselected (map background)");
+  }
+});
+
+// ─────────────────────────────────────────────────────
+// LOG HELPER
+// ─────────────────────────────────────────────────────
+function log(msg) {
+  const el = document.getElementById("log");
+  const t  = new Date().toLocaleTimeString("en",{hour12:false});
+  const d  = document.createElement("div");
+  d.textContent = `[${t}] ${msg}`;
+  d.style.cssText = "color:#02C39A; margin-bottom:4px;";
+  el.insertBefore(d, el.firstChild);
+  if (el.children.length > 30) el.removeChild(el.lastChild);
+  console.log("STATE:", msg, JSON.parse(JSON.stringify(state)));
+}
+
+// ─────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────
+render();
+log("INIT   → dashboard loaded");
+</script>
+</body>
+</html>

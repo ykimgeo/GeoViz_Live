@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seoul Bike-Sharing Visualization</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <h1 id="page-title">Lab 10: Basic Webpage Starter</h1>
+    <p class="subtitle">Use HTML for structure, CSS for design, and JavaScript for interaction.</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>About this page</h2>
+      <p>
+        This page supports exploration of the spatiotemporal flows of Seoul's public bike-sharing 
+        system. For more information about the study area, visit <a href="https://english.seoul.go.kr" target="_blank">Seoul Metropolitan Government</a>.
+      </p>
+      <button id="toggle-button">Show / hide extra details</button>
+      <div id="extra-details" class="hidden">
+        <p>
+          This hidden section is controlled by JavaScript. You can modify the button behavior,
+          button text, or styling as part of the lab.
+        </p>
+      </div>
+      <button id="toggle-button-2">Show / hide extra details</button>
+      <div id="extra-details" class="hidden">
+        <p>
+          This hidden section is controlled by JavaScript. You can modify the button behavior, 
+          button text, or styling as part of the lab.
+        </p>
+      </div>
+    </section>
+
+    <section class="card two-col">
+      <div>
+        <h2>HTML practice</h2>
+        <ul>
+          <li>Add one more bullet item.</li>
+          <li>Change the page title text with JavaScript.</li>
+          <li>Modify the image or image caption.</li>
+          <li>Explore and visualize spatiotemporal bike-sharing flows in Seoul.</li>
+        </ul>
+      </div>
+      <figure class="mini-figure">
+        <img
+          src="https://english.seoul.go.kr/wp-content/uploads/2022/06/ddareng1-2.png"
+          alt="Example placeholder image">
+        <figcaption>Seoul's public bikes</figcaption>
+      </figure>
+    </section>
+
+    <section class="card">
+      <h2>Simple HTML table</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>City</th>
+            <th>State</th>
+            <th>Health Index</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Charlotte</td>
+            <td>NC</td>
+            <td>81.3</td>
+          </tr>
+          <tr>
+            <td>Raleigh</td>
+            <td>NC</td>
+            <td>88.3</td>
+          </tr>
+          <tr>
+            <td>Atlanta</td>
+            <td>GA</td>
+            <td>60.5</td>
+          </tr>
+          <tr>
+            <td>Columbia</td>
+            <td>SC</td>
+            <td>75.4</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

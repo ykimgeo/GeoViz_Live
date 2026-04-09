@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Seoul Bike Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+
+<body>
+    <header>
+        Seoul Public Bike Interactive Dashboard (2025)
+    </header>
+
+    <main>
+        <div class="dashboard-grid">
+            
+            <!-- LEFT SIDEBAR:
+                 This panel is reserved for user controls such as
+                 toggles, sliders, dropdowns, and checkboxes. -->
+            <aside class="sidebar-area">
+                <h3>Filters</h3>
+
+                <!-- Example filter group:
+                     A section wrapper helps keep each control organized. -->
+                <div class="filter-group">
+                    <label for="year-select">Select Year</label>
+                    <select id="year-select">
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="time-range">Time Range</label>
+                    <input type="range" id="time-range" min="0" max="23" value="12">
+                </div>
+
+                <div class="filter-group">
+                    <label>
+                        <input type="checkbox" id="show-stations" checked>
+                        Show bike stations
+                    </label>
+                </div>
+            </aside>
+
+            <!-- RIGHT CONTENT AREA:
+                 This area contains the main outputs for the dashboard. -->
+            <section class="content-area">
+                <div class="map-area">
+                    <h3>Map Area</h3>
+                    <div id="map"></div>
+                </div>
+
+                <div class="chart-area">
+                    <h3>Chart area</h3>
+                    <div id="chart"></div>
+                </div>
+
+                <div class="stats-area">
+                    <h3>Summary Statistics</h3>
+                    <div id="stats"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Load Leaflet first so the global "L" object is available -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Load the dashboard logic after Leaflet has finished loading -->
+    <script src="script.js"></script>
+</body>
+</html>

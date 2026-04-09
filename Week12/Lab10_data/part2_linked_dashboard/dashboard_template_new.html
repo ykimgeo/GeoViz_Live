@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PAGE_TITLE}}</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <h1>{{DASHBOARD_TITLE}}</h1>
+        <p>{{DASHBOARD_SUBTITLE}}</p>
+      </div>
+      <div class="badge">{{HEADER_BADGE}}</div>
+    </header>
+
+    <main class="grid">
+      <section class="panel" id="map-panel">
+        <div class="panel-header"><span class="dot dot-map"></span>Geographic Distribution</div>
+        <div class="panel-body">{{MAP_CHART}}</div>
+      </section>
+
+      <section class="panel" id="bar-panel">
+        <div class="panel-header"><span class="dot dot-bar"></span>City Ranking (Health Index)</div>
+        <div class="panel-body">{{BAR_CHART}}</div>
+      </section>
+
+      <section class="panel" id="scatter-panel">
+        <div class="panel-header"><span class="dot dot-scatter"></span>Relationship: Green Space vs Health</div>
+        <div class="panel-body">{{SCATTER_CHART}}</div>
+      </section>
+
+      <section class="panel" id="table-panel">
+        <div class="panel-header"><span class="dot dot-table"></span>Detailed City Data</div>
+        <div class="table-wrap">{{TABLE_HTML}}</div>
+      </section>
+    </main>
+
+    <footer class="footer">{{FOOTER_TEXT}}</footer>
+  </div>
+
+  {{JS_CHART_DATA}}
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PAGE_TITLE}}</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2b;
+      --panel-2: #0f1726;
+      --border: #263247;
+      --text: #e5edf7;
+      --muted: #9fb0c8;
+      --accent: #f59e0b;
+      --accent-2: #22c55e;
+      --danger: #ef4444;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(34, 197, 94, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 24%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 28px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(18, 26, 43, 0.98), rgba(16, 92, 77, 0.88));
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 1.9rem;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      color: #cde7dc;
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.1);
+      color: #f8fafc;
+      white-space: nowrap;
+      font-size: 0.82rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      grid-template-rows: 420px 420px auto;
+      gap: 18px;
+    }
+
+    #map-panel { grid-column: 1 / -1; }
+    #table-panel { grid-column: 1 / -1; }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      min-width: 0;
+    }
+
+    .panel.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7, 12, 21, 0.72);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.76rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot-map { background: #14b8a6; }
+    .dot-bar { background: #f97316; }
+    .dot-scatter { background: #8b5cf6; }
+    .dot-table { background: #f59e0b; }
+
+    .panel-body {
+      height: calc(100% - 45px);
+      min-height: 0;
+    }
+
+    .panel-body > div,
+    .panel-body .plotly-graph-div {
+      width: 100%;
+      height: 100%;
+    }
+
+    .table-wrap {
+      padding: 16px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 11px 14px;
+      color: #8ee8d0;
+      background: rgba(8, 15, 25, 0.85);
+      border-bottom: 2px solid #155e75;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: #d5dfeb;
+    }
+
+    tbody tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover td {
+      background: rgba(34, 197, 94, 0.06);
+    }
+
+    tbody tr.selected td {
+      background: rgba(245, 158, 11, 0.16);
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(10, 16, 28, 0.92);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    @media (max-width: 960px) {
+      .hero {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: 360px 360px 360px auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <h1>{{DASHBOARD_TITLE}}</h1>
+        <p>{{DASHBOARD_SUBTITLE}}</p>
+      </div>
+      <div class="badge">{{HEADER_BADGE}}</div>
+    </header>
+
+    <main class="grid">
+      <section class="panel" id="map-panel">
+        <div class="panel-header"><span class="dot dot-map"></span>Map View</div>
+        <div class="panel-body">{{MAP_CHART}}</div>
+      </section>
+
+      <section class="panel" id="bar-panel">
+        <div class="panel-header"><span class="dot dot-bar"></span>Bar Chart</div>
+        <div class="panel-body">{{BAR_CHART}}</div>
+      </section>
+
+      <section class="panel" id="scatter-panel">
+        <div class="panel-header"><span class="dot dot-scatter"></span>Scatter Chart</div>
+        <div class="panel-body">{{SCATTER_CHART}}</div>
+      </section>
+
+      <section class="panel" id="table-panel">
+        <div class="panel-header"><span class="dot dot-table"></span>Shared Data Table</div>
+        <div class="table-wrap">{{TABLE_HTML}}</div>
+      </section>
+    </main>
+
+    <footer class="footer">{{FOOTER_TEXT}}</footer>
+  </div>
+
+  <script>
+    (function () {
+      var mapDiv = document.getElementById('map-chart');
+      var barDiv = document.getElementById('bar-chart');
+      var scatterDiv = document.getElementById('scatter-chart');
+      var panelIds = ['map-panel', 'bar-panel', 'scatter-panel', 'table-panel'];
+
+      var mapBase = null;
+      var mapSizes = null;
+      var barBase = null;
+      var barIds = null;
+      var scatterBase = null;
+      var selectedId = null;
+
+      function setPanelsActive(active) {
+        panelIds.forEach(function (id) {
+          document.getElementById(id).classList.toggle('active', active);
+        });
+      }
+
+      function ensureState() {
+        if (mapDiv && mapDiv.data && !mapBase) {
+          mapBase = Array.from(mapDiv.data[0].marker.color);
+          mapSizes = Array.from(mapDiv.data[0].marker.size);
+        }
+        if (barDiv && barDiv.data && !barBase) {
+          barBase = Array.from(barDiv.data[0].marker.color);
+          barIds = Array.from(barDiv.data[0].customdata).map(function (value) {
+            return Array.isArray(value) ? Number(value[0]) : Number(value);
+          });
+        }
+        if (scatterDiv && scatterDiv.data && !scatterBase) {
+          scatterBase = {
+            color: Array.from(scatterDiv.data[0].marker.color),
+            size: Array.from(scatterDiv.data[0].marker.size)
+          };
+        }
+      }
+
+      function highlightMap(cityId) {
+        ensureState();
+        Plotly.restyle(mapDiv, {
+          'marker.color': [mapBase.map(function (_, i) { return i === cityId ? '#f59e0b' : mapBase[i]; })]
+        });
+      }
+
+      function highlightBar(cityId) {
+        ensureState();
+        Plotly.restyle(barDiv, {
+          'marker.color': [barIds.map(function (id) { return id === cityId ? '#f59e0b' : '#22c55e'; })],
+          'marker.line.color': [barIds.map(function (id) { return id === cityId ? '#ffffff' : 'rgba(0,0,0,0)'; })],
+          'marker.line.width': [barIds.map(function (id) { return id === cityId ? 2 : 0; })]
+        });
+      }
+
+      function highlightScatter(cityId) {
+        ensureState();
+        Plotly.restyle(scatterDiv, {
+          'marker.color': [scatterBase.color.map(function (_, i) { return i === cityId ? '#f59e0b' : scatterBase.color[i]; })],
+          'marker.line.color': [scatterBase.size.map(function (_, i) { return i === cityId ? '#ffffff' : '#334155'; })],
+          'marker.line.width': [scatterBase.size.map(function (_, i) { return i === cityId ? 3 : 1; })]
+        });
+      }
+
+      function highlightTable(cityId) {
+        document.querySelectorAll('.summary-table tbody tr').forEach(function (tr) {
+          var rowId = Number(tr.dataset.cityId);
+          var isSelected = rowId === cityId;
+          tr.classList.toggle('selected', isSelected);
+          if (isSelected) tr.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+      }
+
+      function selectCity(cityId) {
+        selectedId = cityId;
+        setPanelsActive(true);
+        highlightMap(cityId);
+        highlightBar(cityId);
+        highlightScatter(cityId);
+        highlightTable(cityId);
+      }
+
+      function clearSelection() {
+        selectedId = null;
+        setPanelsActive(false);
+        ensureState();
+
+        if (mapBase) {
+          Plotly.restyle(mapDiv, {
+            'marker.color': [mapBase]
+          });
+        }
+
+        if (barBase) {
+          Plotly.restyle(barDiv, {
+            'marker.color': [barBase],
+            'marker.line.color': [barBase.map(function () { return 'rgba(0,0,0,0)'; })],
+            'marker.line.width': [barBase.map(function () { return 0; })]
+          });
+        }
+
+        if (scatterBase) {
+          Plotly.restyle(scatterDiv, {
+            'marker.color': [scatterBase.color],
+            'marker.line.color': [scatterBase.size.map(function () { return '#334155'; })],
+            'marker.line.width': [scatterBase.size.map(function () { return 1; })]
+          });
+        }
+
+        document.querySelectorAll('.summary-table tbody tr').forEach(function (tr) {
+          tr.classList.remove('selected');
+        });
+      }
+
+      function extractCityId(point) {
+        if (!point || !point.customdata) return null;
+        return Number(point.customdata[0]);
+      }
+
+      mapDiv.on('plotly_click', function (event) {
+        selectCity(extractCityId(event.points[0]));
+      });
+      barDiv.on('plotly_click', function (event) {
+        selectCity(extractCityId(event.points[0]));
+      });
+      scatterDiv.on('plotly_click', function (event) {
+        selectCity(extractCityId(event.points[0]));
+      });
+
+      [mapDiv, barDiv, scatterDiv].forEach(function (div) {
+        div.on('plotly_doubleclick', function () {
+          clearSelection();
+          return false;
+        });
+      });
+
+      document.querySelectorAll('.summary-table tbody tr').forEach(function (tr) {
+        tr.addEventListener('click', function () {
+          selectCity(Number(tr.dataset.cityId));
+        });
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && selectedId !== null) clearSelection();
+      });
+    })();
+  </script>
+</body>
+</html>
