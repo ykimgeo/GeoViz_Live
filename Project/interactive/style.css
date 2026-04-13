@@ -30,6 +30,19 @@ header {
     font-weight: 600;
 }
 
+/* Separate the main title from the subtitle so the header can carry
+   both dashboard identity and short context text. */
+.header-title {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.header-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
 /* ================================
    MAIN CONTAINER
    ================================ */
@@ -101,6 +114,27 @@ main {
     font-weight: 600;
 }
 
+/* Checkbox rows should stay on one line and align neatly. */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Give minor sidebar text a softer appearance so it reads like metadata. */
+.sidebar-note {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #4b5563;
+}
+
+/* Small subheadings inside the sidebar help group controls and notes. */
+.filter-group h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+}
+
 /* Ensure form controls use the sidebar width cleanly. */
 .filter-group select,
 .filter-group input[type="range"] {
@@ -166,6 +200,77 @@ main {
     line-height: 1.5;
 }
 
+/* Show a compact grid of key metrics in the stats panel. */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+/* Each metric is presented as a small card for quick scanning. */
+.stat-card {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #fafafa;
+}
+
+.stat-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stat-value {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+/* This layout creates a simple, library-free bar chart with HTML only.
+   It is useful while you are still wiring Python data into the dashboard. */
+.chart-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px;
+    gap: 10px;
+    align-items: center;
+}
+
+.bar-label,
+.bar-value {
+    font-size: 13px;
+}
+
+.bar-track {
+    height: 14px;
+    border-radius: 999px;
+    background-color: #e5e7eb;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+/* Reuse this muted block for empty states or fallback messages. */
+.empty-state {
+    padding: 12px;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    color: #6b7280;
+    font-size: 13px;
+}
+
 /* ================================
    RESPONSIVE ADJUSTMENT
    ================================ */
@@ -182,6 +287,10 @@ main {
         height: auto;
         grid-template-columns: 1fr;
         grid-template-rows: auto;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
     }
 
     .map-area {

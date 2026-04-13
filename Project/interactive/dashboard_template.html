@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{PAGE_TITLE}}</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <header>
+        <div class="header-title">{{DASHBOARD_TITLE}}</div>
+        <div class="header-subtitle">{{DASHBOARD_SUBTITLE}}</div>
+    </header>
+
+    <main>
+        <div class="dashboard-grid">
+            <aside class="sidebar-area">
+                <h3>Filters</h3>
+            </aside>
+
+            <section class="content-area">
+                <div class="map-area">
+                    <h3>Map Area</h3>
+                    <div id="map"></div>
+                </div>
+
+                <div class="chart-area">
+                    <h3>Chart Area</h3>
+                </div>
+
+                <div class="stats-area">
+                    <h3>Summary Statistics</h3>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    {{JS_CHART_DATA}}
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
