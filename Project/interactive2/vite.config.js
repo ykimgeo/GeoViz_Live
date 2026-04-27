@@ -18,6 +18,7 @@ function copyDashboardData() {
 }
 
 export default defineConfig({
+  base: './',
   root: '.',
   publicDir: false,
   plugins: [copyDashboardData()],
