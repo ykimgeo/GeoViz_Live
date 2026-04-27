@@ -1,45 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{PAGE_TITLE}}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PAGE_TITLE}}</title>
 
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <div class="header-title">{{DASHBOARD_TITLE}}</div>
-        <div class="header-subtitle">{{DASHBOARD_SUBTITLE}}</div>
+  <div class="dashboard-shell">
+    <header class="dashboard-title">
+      <div>
+        <p class="eyebrow">{{HEADER_BADGE}}</p>
+        <h1>{{DASHBOARD_TITLE}}</h1>
+        <p>{{DASHBOARD_SUBTITLE}}</p>
+      </div>
+      <div class="title-metrics">
+        <span><strong id="header-trips">--</strong> trips</span>
+        <span><strong id="header-routes">--</strong> routes</span>
+      </div>
     </header>
 
-    <main>
-        <div class="dashboard-grid">
-            <aside class="sidebar-area">
-                <h3>Filters</h3>
-            </aside>
-
-            <section class="content-area">
-                <div class="map-area">
-                    <h3>Map Area</h3>
-                    <div id="map"></div>
-                </div>
-
-                <div class="chart-area">
-                    <h3>Chart Area</h3>
-                </div>
-
-                <div class="stats-area">
-                    <h3>Summary Statistics</h3>
-                </div>
-            </section>
+    <main class="dashboard-grid">
+      <aside class="panel filter-panel" aria-label="Dashboard filters">
+        <div class="panel-header">
+          <span>Filters</span>
+          <button type="button" id="reset-filters" title="Reset filters">Reset</button>
         </div>
+        <div class="filter-stack">
+          <label>
+            Spatial level
+            <select id="level-filter">
+              <option value="gu">Gu</option>
+              <option value="dong">Dong</option>
+              <option value="station">Station</option>
+            </select>
+          </label>
+
+          <label>
+            Month
+            <select id="month-filter">
+              <option value="all">All months</option>
+              <option value="1">January</option>
+              <option value="8">August</option>
+            </select>
+          </label>
+
+          <label>
+            Day type
+            <select id="weekday-filter">
+              <option value="all">All days</option>
+              <option value="weekday">Weekday</option>
+              <option value="weekend">Weekend</option>
+            </select>
+          </label>
+
+          <label>
+            Hour
+            <select id="hour-filter">
+              <option value="all">All hours</option>
+              {{HOUR_OPTIONS}}
+            </select>
+          </label>
+
+          <label>
+            Top flow percentage
+            <input id="flow-percent-filter" type="range" min="1" max="100" step="1" value="5">
+            <span id="flow-percent-value">Top 5% of routes</span>
+          </label>
+        </div>
+
+        <div class="selection-card">
+          <span class="label">Selected place</span>
+          <strong id="selected-place">All Seoul</strong>
+          <p id="selected-detail">Click a polygon, station marker, flow line, or chart bar to focus the dashboard.</p>
+        </div>
+      </aside>
+
+      <section class="panel map-panel">
+        <div class="panel-header">
+          <span>Interactive Flow Map</span>
+          <span id="map-status">Loading</span>
+        </div>
+        <div id="map"></div>
+        <div class="legend" id="map-legend"></div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-header">
+          <span>Top Origins</span>
+          <span id="chart-status">Trip volume</span>
+        </div>
+        <div id="bar-chart" class="bar-chart"></div>
+      </section>
+
+      <section class="panel summary-panel">
+        <div class="panel-header">
+          <span>Summary Statistics</span>
+          <span id="summary-status">Current filter</span>
+        </div>
+        <div class="stats-grid">
+          <div>
+            <span>Total trips</span>
+            <strong id="stat-trips">--</strong>
+          </div>
+          <div>
+            <span>Unique routes</span>
+            <strong id="stat-routes">--</strong>
+          </div>
+          <div>
+            <span>Avg duration</span>
+            <strong id="stat-duration">--</strong>
+          </div>
+          <div>
+            <span>Avg distance</span>
+            <strong id="stat-distance">--</strong>
+          </div>
+        </div>
+        <div class="route-list">
+          <h2>Strongest Flows</h2>
+          <div id="route-list"></div>
+        </div>
+      </section>
     </main>
 
-    {{JS_CHART_DATA}}
+    <footer>{{FOOTER_TEXT}}</footer>
+  </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+  {{JS_DASHBOARD_CONFIG}}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

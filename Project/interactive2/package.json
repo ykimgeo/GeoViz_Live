@@ -1,0 +1,24 @@
+{
+  "name": "bike-sharing-flow-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@deck.gl/core": "8.9.36",
+    "@deck.gl/geo-layers": "8.9.36",
+    "@deck.gl/layers": "8.9.36",
+    "@flowmap.gl/data": "8.0.2",
+    "@flowmap.gl/layers": "8.0.2",
+    "@luma.gl/constants": "8.5.21",
+    "@luma.gl/core": "8.5.21",
+    "@luma.gl/webgl": "8.5.21"
+  },
+  "devDependencies": {
+    "vite": "^5.4.21"
+  }
+}

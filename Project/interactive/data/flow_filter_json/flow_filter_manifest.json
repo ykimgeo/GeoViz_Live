@@ -1,0 +1,60 @@
+{
+  "description": "Dashboard flow filter manifest",
+  "filters": {
+    "months": [
+      1,
+      8
+    ],
+    "weekday_types": [
+      "weekday",
+      "weekend"
+    ],
+    "hours": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  },
+  "pathTemplate": "data/flow_filter_json/{level}/month-{month}__weekday-{weekday_type}__hour-{hour}.json",
+  "levels": {
+    "gu": {
+      "originField": "origin_gu",
+      "destField": "dest_gu",
+      "partitions": 225,
+      "defaultPath": "data/flow_filter_json/gu/month-all__weekday-all__hour-all.json"
+    },
+    "dong": {
+      "originField": "origin_dong",
+      "destField": "dest_dong",
+      "partitions": 225,
+      "defaultPath": "data/flow_filter_json/dong/month-all__weekday-all__hour-all.json"
+    },
+    "station": {
+      "originField": "origin_station_id",
+      "destField": "dest_station_id",
+      "partitions": 225,
+      "defaultPath": "data/flow_filter_json/station/month-all__weekday-all__hour-all.json"
+    }
+  }
+}

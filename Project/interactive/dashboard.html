@@ -1,148 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seoul Bike Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seoul Bike-Sharing Flow Dashboard</title>
 
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <div class="header-title">Seoul Public Bike Interactive Dashboard (2025)</div>
-        <div class="header-subtitle">Template wired for Python-processed data through window.CHART_DATA</div>
+  <div class="dashboard-shell">
+    <header class="dashboard-title">
+      <div>
+        <p class="eyebrow">Interactive Geovisualization</p>
+        <h1>Seoul Bike-Sharing Flow Dashboard</h1>
+        <p>Interactive origin-destination flows by month, day type, hour, and spatial level.</p>
+      </div>
+      <div class="title-metrics">
+        <span><strong id="header-trips">--</strong> trips</span>
+        <span><strong id="header-routes">--</strong> routes</span>
+      </div>
     </header>
 
-    <main>
-        <div class="dashboard-grid">
-            <aside class="sidebar-area">
-                <h3>Filters</h3>
-            </aside>
-
-            <section class="content-area">
-                <div class="map-area">
-                    <h3>Map Area</h3>
-                    <div id="map"></div>
-                </div>
-
-                <div class="chart-area">
-                    <h3>Chart Area</h3>
-                </div>
-
-                <div class="stats-area">
-                    <h3>Summary Statistics</h3>
-                </div>
-            </section>
+    <main class="dashboard-grid">
+      <aside class="panel filter-panel" aria-label="Dashboard filters">
+        <div class="panel-header">
+          <span>Filters</span>
+          <button type="button" id="reset-filters" title="Reset filters">Reset</button>
         </div>
+        <div class="filter-stack">
+          <label>
+            Spatial level
+            <select id="level-filter">
+              <option value="gu">Gu</option>
+              <option value="dong">Dong</option>
+              <option value="station">Station</option>
+            </select>
+          </label>
+
+          <label>
+            Month
+            <select id="month-filter">
+              <option value="all">All months</option>
+              <option value="1">January</option>
+              <option value="8">August</option>
+            </select>
+          </label>
+
+          <label>
+            Day type
+            <select id="weekday-filter">
+              <option value="all">All days</option>
+              <option value="weekday">Weekday</option>
+              <option value="weekend">Weekend</option>
+            </select>
+          </label>
+
+          <label>
+            Hour
+            <select id="hour-filter">
+              <option value="all">All hours</option>
+                            <option value="0">00:00</option>
+              <option value="1">01:00</option>
+              <option value="2">02:00</option>
+              <option value="3">03:00</option>
+              <option value="4">04:00</option>
+              <option value="5">05:00</option>
+              <option value="6">06:00</option>
+              <option value="7">07:00</option>
+              <option value="8">08:00</option>
+              <option value="9">09:00</option>
+              <option value="10">10:00</option>
+              <option value="11">11:00</option>
+              <option value="12">12:00</option>
+              <option value="13">13:00</option>
+              <option value="14">14:00</option>
+              <option value="15">15:00</option>
+              <option value="16">16:00</option>
+              <option value="17">17:00</option>
+              <option value="18">18:00</option>
+              <option value="19">19:00</option>
+              <option value="20">20:00</option>
+              <option value="21">21:00</option>
+              <option value="22">22:00</option>
+              <option value="23">23:00</option>
+            </select>
+          </label>
+
+          <label>
+            Top flow percentage
+            <input id="flow-percent-filter" type="range" min="1" max="100" step="1" value="5">
+            <span id="flow-percent-value">Top 5% of routes</span>
+          </label>
+        </div>
+
+        <div class="selection-card">
+          <span class="label">Selected place</span>
+          <strong id="selected-place">All Seoul</strong>
+          <p id="selected-detail">Click a polygon, station marker, flow line, or chart bar to focus the dashboard.</p>
+        </div>
+      </aside>
+
+      <section class="panel map-panel">
+        <div class="panel-header">
+          <span>Interactive Flow Map</span>
+          <span id="map-status">Loading</span>
+        </div>
+        <div id="map"></div>
+        <div class="legend" id="map-legend"></div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-header">
+          <span>Top Origins</span>
+          <span id="chart-status">Trip volume</span>
+        </div>
+        <div id="bar-chart" class="bar-chart"></div>
+      </section>
+
+      <section class="panel summary-panel">
+        <div class="panel-header">
+          <span>Summary Statistics</span>
+          <span id="summary-status">Current filter</span>
+        </div>
+        <div class="stats-grid">
+          <div>
+            <span>Total trips</span>
+            <strong id="stat-trips">--</strong>
+          </div>
+          <div>
+            <span>Unique routes</span>
+            <strong id="stat-routes">--</strong>
+          </div>
+          <div>
+            <span>Avg duration</span>
+            <strong id="stat-duration">--</strong>
+          </div>
+          <div>
+            <span>Avg distance</span>
+            <strong id="stat-distance">--</strong>
+          </div>
+        </div>
+        <div class="route-list">
+          <h2>Strongest Flows</h2>
+          <div id="route-list"></div>
+        </div>
+      </section>
     </main>
 
-    <script>
-window.CHART_DATA = {
-  "meta": {
-    "pageTitle": "Seoul Bike Dashboard",
-    "dashboardTitle": "Seoul Public Bike Interactive Dashboard (2025)",
-    "dashboardSubtitle": "Template wired for Python-processed data through window.CHART_DATA",
-    "sourceNote": "This dashboard is compiled from Python-prepared JSON data and consumed by script.js in the browser.",
-    "lastUpdated": "2025-06-30"
+    <footer>Data source: Project/interactive/data. Filters load pre-aggregated flow JSON files generated from the bike-sharing OD dataset.</footer>
+  </div>
+
+  <script>
+  window.DASHBOARD_CONFIG = {
+  "dataRoot": "data",
+  "manifestPath": "data/flow_filter_json/flow_filter_manifest.json",
+  "geojson": {
+    "gu": "data/seoul_gu.geojson",
+    "dong": "data/seoul_dong.geojson",
+    "station": "data/station.geojson"
   },
-  "filters": {
-    "years": [
-      2025
-    ],
-    "defaultYear": 2025,
-    "hours": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      12,
-      13,
-      14,
-      15,
-      16,
-      17,
-      18,
-      19,
-      20,
-      21,
-      22,
-      23
-    ],
-    "defaultHour": 12
+  "geoIdFields": {
+    "gu": "ADM_NM",
+    "dong": "ADM_NM",
+    "station": "stationID"
   },
-  "map": {
-    "center": [
-      37.5665,
-      126.978
-    ],
-    "zoom": 11,
-    "lod": {
-      "seoul": {
-        "minZoom": 0,
-        "maxZoom": 10,
-        "path": "data/seoul.geojson",
-        "label": "Seoul",
-        "featureLabelKey": "SIDO_NM"
-      },
-      "gu": {
-        "minZoom": 11,
-        "maxZoom": 13,
-        "path": "data/seoul_gu.geojson",
-        "label": "Gu",
-        "featureLabelKey": "ADM_NM"
-      },
-      "dong": {
-        "minZoom": 14,
-        "maxZoom": 16,
-        "path": "data/seoul_dong.geojson",
-        "label": "Dong",
-        "featureLabelKey": "ADM_NM"
-      },
-      "station": {
-        "minZoom": 17,
-        "maxZoom": 22,
-        "path": "data/station.geojson",
-        "label": "Station",
-        "featureLabelKey": "stationID"
-      }
-    }
-  },
-  "chart": {
-    "bars": [
-      {
-        "label": "Seoul Boundary",
-        "value": 1
-      }
-    ]
-  },
-  "stationMarkers": [
-    {
-      "id": "seoul-centroid",
-      "name": "Seoul Example Record",
-      "lat": 37.535779,
-      "lon": 126.960191,
-      "year": 2025,
-      "hour": 12,
-      "rentals": 1
-    }
-  ],
-  "summary": {
-    "totalRegions": 1,
-    "totalRecords": 1
+  "defaultFilters": {
+    "level": "gu",
+    "month": "all",
+    "weekday_type": "all",
+    "hour": "all",
+    "flowPercent": 5
   }
 };
 </script>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
